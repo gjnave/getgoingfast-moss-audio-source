@@ -6,8 +6,6 @@ set "ROOT_DIR=%~dp0"
 set "VENV_DIR=%ROOT_DIR%.venv"
 set "WEIGHTS_DIR=%ROOT_DIR%weights\MOSS-Audio-4B-Instruct"
 set "HF_MODEL=OpenMOSS-Team/MOSS-Audio-4B-Instruct"
-set "MODEL_BASE_URL=https://huggingface.co/%HF_MODEL%/resolve/main"
-set "ARIA2C_EXE=%ROOT_DIR%aria2c.exe"
 set "FFMPEG_DIR=%ROOT_DIR%ffmpeg"
 set "FFMPEG_BIN=%FFMPEG_DIR%\bin"
 set "DOWNLOADS_DIR=%ROOT_DIR%downloads"
@@ -67,7 +65,7 @@ if exist "%FFMPEG_BIN%\ffmpeg.exe" (
   )
 
   if exist "%FFMPEG_DIR%" rmdir /s /q "%FFMPEG_DIR%"
-  move "!FFMPEG_SOURCE!" "%FFMPEG_DIR%"
+  move "%FFMPEG_SOURCE%" "%FFMPEG_DIR%"
   if errorlevel 1 exit /b 1
 )
 
@@ -90,52 +88,9 @@ pip install "huggingface_hub[cli]"
 if errorlevel 1 exit /b 1
 
 if not exist "%WEIGHTS_DIR%" (
-  set "USE_HF_FALLBACK=0"
-  if exist "%ARIA2C_EXE%" (
-    echo Downloading model files with aria2c...
-    if not exist "%WEIGHTS_DIR%" mkdir "%WEIGHTS_DIR%"
-    call :download_model_file "config.json"
-    if errorlevel 1 set "USE_HF_FALLBACK=1"
-    call :download_model_file "generation_config.json"
-    if errorlevel 1 set "USE_HF_FALLBACK=1"
-    call :download_model_file "model.safetensors.index.json"
-    if errorlevel 1 set "USE_HF_FALLBACK=1"
-    call :download_model_file "added_tokens.json"
-    if errorlevel 1 set "USE_HF_FALLBACK=1"
-    call :download_model_file "chat_template.jinja"
-    if errorlevel 1 set "USE_HF_FALLBACK=1"
-    call :download_model_file "configuration_moss_audio.py"
-    if errorlevel 1 set "USE_HF_FALLBACK=1"
-    call :download_model_file "processing_moss_audio.py"
-    if errorlevel 1 set "USE_HF_FALLBACK=1"
-    call :download_model_file "processor_config.json"
-    if errorlevel 1 set "USE_HF_FALLBACK=1"
-    call :download_model_file "special_tokens_map.json"
-    if errorlevel 1 set "USE_HF_FALLBACK=1"
-    call :download_model_file "tokenizer_config.json"
-    if errorlevel 1 set "USE_HF_FALLBACK=1"
-    call :download_model_file "merges.txt"
-    if errorlevel 1 set "USE_HF_FALLBACK=1"
-    call :download_model_file "vocab.json"
-    if errorlevel 1 set "USE_HF_FALLBACK=1"
-    call :download_model_file "model-00001-of-00003.safetensors"
-    if errorlevel 1 set "USE_HF_FALLBACK=1"
-    call :download_model_file "model-00002-of-00003.safetensors"
-    if errorlevel 1 set "USE_HF_FALLBACK=1"
-    call :download_model_file "model-00003-of-00003.safetensors"
-    if errorlevel 1 set "USE_HF_FALLBACK=1"
-    if not exist "%WEIGHTS_DIR%\model-00001-of-00003.safetensors" set "USE_HF_FALLBACK=1"
-    if not exist "%WEIGHTS_DIR%\model-00002-of-00003.safetensors" set "USE_HF_FALLBACK=1"
-    if not exist "%WEIGHTS_DIR%\model-00003-of-00003.safetensors" set "USE_HF_FALLBACK=1"
-  ) else (
-    set "USE_HF_FALLBACK=1"
-  )
-
-  if "!USE_HF_FALLBACK!"=="1" (
-    echo Downloading model weights...
-    hf download %HF_MODEL% --local-dir "%WEIGHTS_DIR%"
-    if errorlevel 1 exit /b 1
-  )
+  echo Downloading model weights...
+  hf download %HF_MODEL% --local-dir "%WEIGHTS_DIR%"
+  if errorlevel 1 exit /b 1
 )
 
 echo.
@@ -144,9 +99,3 @@ echo Repo: %ROOT_DIR%
 echo Model: %WEIGHTS_DIR%
 echo Run: %ROOT_DIR%run-audio-moss-standalone.bat
 endlocal
-
-:download_model_file
-set "REL_FILE=%~1"
-if not exist "%WEIGHTS_DIR%" mkdir "%WEIGHTS_DIR%"
-"%ARIA2C_EXE%" -x 16 -s 16 -k 1M --allow-overwrite=true --auto-file-renaming=false -d "%WEIGHTS_DIR%" -o "%REL_FILE%" "%MODEL_BASE_URL%/%REL_FILE%"
-exit /b %errorlevel%
