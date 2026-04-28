@@ -1,6 +1,10 @@
-# GET GOING FAST - MOSS Audio Captioning
-
-[![Visit Get Going Fast](https://img.shields.io/badge/Get_Going_Fast-Open_Site-1f7b78)](https://getgoingfast.pro)
+<h1 align="center">GET GOING FAST - MOSS Audio Captioning</h1>
+<div align="center" style="display: flex; justify-content: center; margin-top: 10px;">
+  <a href="https://getgoingfast.pro"><img src="https://www.cognibuild.ai/wp-content/uploads/2024/09/new.webp" style="margin-right: 5px;"></a>
+  <a href="https://getgoingfast.pro">Get Going Fast</a>
+</div>
+<br/>
+<br/>
 
 Installation instructions:
 1. `git clone https://github.com/gjnave/moss-audio-gff.git`
