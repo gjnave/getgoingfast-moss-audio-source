@@ -1,0 +1,7 @@
+.venv/
+downloads/
+ffmpeg/
+weights/
+outputs/
+__pycache__/
+*.log
