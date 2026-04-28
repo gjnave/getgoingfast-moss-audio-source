@@ -1,6 +1,19 @@
-# MOSS-Audio
+# GET GOING FAST - MOSS Audio Captioning
 
-Get Going Fast edition: a Windows-ready build with local install and run scripts at the repo root.
+[![Visit Get Going Fast](https://img.shields.io/badge/Get_Going_Fast-Open_Site-1f7b78)](https://getgoingfast.pro)
+
+Installation instructions:
+1. `git clone https://github.com/gjnave/moss-audio-gff.git`
+2. `cd moss-audio-gff`
+3. `python -m venv venv`
+4. `call venv\Scripts\activate`
+5. `python -m pip install --upgrade pip`
+6. `pip install --extra-index-url https://download.pytorch.org/whl/cu128 -e ".[torch-runtime]"`
+7. `pip install torchcodec`
+8. `pip install yt-dlp "huggingface_hub[cli]"`
+9. `hf download OpenMOSS-Team/MOSS-Audio-4B-Instruct --local-dir ".\weights\MOSS-Audio-4B-Instruct"`
+10. `set MOSS_AUDIO_MODEL_ID=.\weights\MOSS-Audio-4B-Instruct`
+11. `python app.py`
 
 
 <p align="center">
