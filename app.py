@@ -54,48 +54,59 @@ OUTPUTS_DIR = Path(__file__).resolve().parent / "outputs"
 
 CUSTOM_CSS = """
 :root {
-  --app-bg: #0f1318;
-  --app-surface: rgba(22, 28, 35, 0.82);
-  --app-surface-2: rgba(27, 34, 43, 0.92);
-  --app-line: rgba(210, 221, 233, 0.10);
-  --app-line-strong: rgba(210, 221, 233, 0.18);
-  --app-text: #ecf1f6;
-  --app-muted: #aab7c4;
-  --app-accent: #5bb7b0;
-  --app-accent-deep: #1f7b78;
-  --app-shadow: 0 24px 80px rgba(0, 0, 0, 0.36);
-  --app-radius: 22px;
+  --app-bg: #11161b;
+  --app-panel: #171d24;
+  --app-panel-2: #1d242d;
+  --app-card: #ffffff;
+  --app-card-soft: #f4f7fb;
+  --app-line: rgba(255, 255, 255, 0.08);
+  --app-line-strong: rgba(16, 24, 32, 0.14);
+  --app-text: #eef3f7;
+  --app-muted: #b6c3cf;
+  --app-dark-text: #18202a;
+  --app-dark-muted: #4c5a67;
+  --app-accent: #59b8b0;
+  --app-accent-deep: #24827d;
+  --app-shadow: 0 22px 70px rgba(0, 0, 0, 0.28);
+  --app-radius: 20px;
 }
 
-html, body, .gradio-container {
+html, body {
+  background: #0d1217 !important;
+  min-height: 100vh;
+  margin: 0 !important;
+}
+
+body, .gradio-container {
   background:
-    radial-gradient(circle at top left, rgba(91, 183, 176, 0.14), transparent 24%),
-    radial-gradient(circle at top right, rgba(200, 155, 97, 0.10), transparent 22%),
-    linear-gradient(180deg, #0b0f14 0%, #10161d 50%, #0f1318 100%) !important;
+    radial-gradient(circle at top left, rgba(89, 184, 176, 0.10), transparent 22%),
+    linear-gradient(180deg, #0d1217 0%, #11161b 100%) !important;
   color: var(--app-text) !important;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif !important;
 }
 
 .gradio-container {
-  max-width: 1360px !important;
-  padding-top: 14px !important;
+  width: calc(100vw - 26px) !important;
+  max-width: 1700px !important;
+  margin: 0 auto !important;
+  padding: 10px 0 18px !important;
 }
 
 h1, h2, h3, h4, .brand-title {
-  font-family: Georgia, "Times New Roman", serif !important;
-  letter-spacing: -0.025em;
+  font-family: "Segoe UI Semibold", "Segoe UI", "Helvetica Neue", Arial, sans-serif !important;
+  letter-spacing: -0.02em;
   color: var(--app-text) !important;
 }
 
 .app-hero-shell {
   position: relative;
-  padding: 18px 22px;
-  border-radius: 28px;
-  background: linear-gradient(180deg, rgba(23, 30, 38, 0.92), rgba(16, 21, 27, 0.96));
+  padding: 12px 18px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #151b22, #12181f);
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: var(--app-shadow);
   overflow: hidden;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 .app-hero-shell::before {
@@ -111,42 +122,43 @@ h1, h2, h3, h4, .brand-title {
 .app-hero-main {
   position: relative;
   z-index: 1;
-  padding: 8px 2px;
+  padding: 2px 0;
 }
 
 .kicker {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 12px;
+  padding: 5px 10px;
   border-radius: 999px;
   background: rgba(91, 183, 176, 0.10);
   border: 1px solid rgba(91, 183, 176, 0.16);
   color: #a7e4df;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .brand-title {
-  margin: 12px 0 8px;
-  font-size: clamp(2.1rem, 3.4vw, 3.8rem);
-  line-height: 0.96;
+  margin: 8px 0 5px;
+  font-size: clamp(1.9rem, 2.3vw, 2.9rem);
+  line-height: 1.02;
+  font-weight: 700;
 }
 
 .brand-subtitle {
-  max-width: 68ch;
-  font-size: 1rem;
-  line-height: 1.6;
+  max-width: 72ch;
+  font-size: 0.95rem;
+  line-height: 1.45;
   color: var(--app-muted);
   margin: 0;
 }
 
 .contact-line {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   color: var(--app-muted);
-  font-size: 0.95rem;
+  font-size: 0.88rem;
 }
 
 .block, .gr-box, .gr-panel, .gr-group, .gr-form, .gradio-group, .gr-accordion {
@@ -154,9 +166,9 @@ h1, h2, h3, h4, .brand-title {
 }
 
 .gr-box, .gr-panel, .gr-group, .gr-form, .gradio-group, .gr-accordion {
-  background: var(--app-surface) !important;
+  background: var(--app-panel) !important;
   border: 1px solid var(--app-line) !important;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18) !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18) !important;
 }
 
 .gradio-container .prose,
@@ -174,16 +186,68 @@ a {
   color: #8edbd5 !important;
 }
 
-input, textarea, .gr-textbox input, .gr-textbox textarea {
+input, textarea, .gr-textbox input, .gr-textbox textarea, .gr-textbox > label > textarea {
   border-radius: 16px !important;
-  background: var(--app-surface-2) !important;
-  color: var(--app-text) !important;
+  background: var(--app-card) !important;
+  color: var(--app-dark-text) !important;
   border: 1px solid var(--app-line-strong) !important;
 }
 
 textarea::placeholder,
 input::placeholder {
-  color: #8ea0b1 !important;
+  color: #7d8b98 !important;
+}
+
+.gradio-container .gr-audio-container,
+.gradio-container .gr-file,
+.gradio-container .gr-image,
+.gradio-container .gr-video,
+.gradio-container .gradio-audio,
+.gradio-container .gradio-file,
+.gradio-container .gradio-textbox,
+.gradio-container .gradio-html,
+.gradio-container .gradio-checkbox,
+.gradio-container .gradio-markdown.output-markdown {
+  background: var(--app-card-soft) !important;
+  color: var(--app-dark-text) !important;
+  border: 1px solid rgba(23, 31, 39, 0.10) !important;
+}
+
+.gradio-container .gradio-audio *,
+.gradio-container .gradio-file *,
+.gradio-container .gradio-textbox label,
+.gradio-container .gradio-checkbox label,
+.gradio-container .gradio-checkbox span,
+.gradio-container .gradio-accordion .label-wrap,
+.gradio-container .gradio-accordion .label-wrap * {
+  color: var(--app-dark-text) !important;
+}
+
+.gradio-container .gradio-accordion {
+  background: var(--app-card) !important;
+}
+
+.gradio-container .gradio-accordion .label-wrap,
+.gradio-container .gradio-accordion .icon-wrap {
+  color: var(--app-dark-text) !important;
+}
+
+.gradio-container .gradio-checkbox {
+  padding: 10px 12px !important;
+}
+
+.gradio-container .gradio-row,
+.gradio-container .gr-row {
+  gap: 12px !important;
+}
+
+.gradio-container .gradio-column,
+.gradio-container .gr-column {
+  gap: 10px !important;
+}
+
+.gradio-container .gr-form {
+  gap: 10px !important;
 }
 
 button.primary, .gr-button-primary, button[variant="primary"] {
@@ -204,7 +268,11 @@ footer {
 }
 
 @media (max-width: 980px) {
-  .app-hero-shell { padding: 16px 18px; border-radius: 24px; }
+  .gradio-container {
+    width: calc(100vw - 14px) !important;
+  }
+  .app-hero-shell { padding: 12px 14px; border-radius: 16px; }
+  .brand-title { font-size: 1.9rem; }
 }
 """
 
@@ -692,9 +760,6 @@ with gr.Blocks(title=TITLE) as demo:
                 label="Save training-ready chunk pairs (.wav + .txt)",
                 value=False,
             )
-            gr.Markdown(
-                "Turn this on when you want reusable dataset-style outputs. The app saves clean numbered `wav` files with matching `txt` captions, which is usually the safest format for later model work."
-            )
 
             with gr.Accordion("Advanced Settings", open=False):
                 max_new_tokens_input = gr.Slider(
@@ -773,18 +838,6 @@ with gr.Blocks(title=TITLE) as demo:
                 max_lines=30,
                 autoscroll=True,
             )
-
-    gr.Examples(
-        examples=[
-            ["Describe this audio."],
-            ["Please transcribe this audio."],
-            ["What is happening in this audio clip?"],
-            ["Describe the speaker's voice characteristics in detail."],
-            ["What emotion does the speaker convey?"],
-        ],
-        inputs=[question_input],
-        label="Prompt Examples",
-    )
 
     submit_btn.click(
         fn=run_inference_stream,
