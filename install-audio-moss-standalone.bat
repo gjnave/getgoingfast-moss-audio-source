@@ -57,8 +57,8 @@ if not exist "%FFMPEG_BIN%\ffmpeg.exe" (
     exit /b 1
   )
 
-  if not exist "%FFMPEG_DIR%" mkdir "%FFMPEG_DIR%"
-  xcopy "%FFMPEG_SOURCE%\*" "%FFMPEG_DIR%\" /e /i /y >nul
+  if exist "%FFMPEG_DIR%" rmdir /s /q "%FFMPEG_DIR%"
+  move "%FFMPEG_SOURCE%" "%FFMPEG_DIR%"
   if errorlevel 1 exit /b 1
 )
 
