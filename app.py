@@ -52,7 +52,7 @@ def get_inference(model_name_or_path: str, device: str) -> MossAudioHFInference:
     return MossAudioHFInference(
         model_name_or_path=model_name_or_path,
         device=device,
-        dtype="auto",
+        torch_dtype="auto",
         enable_time_marker=True,
     )
 
