@@ -26,6 +26,7 @@ DEFAULT_PROMPT = (
     "Describe the genre, instruments, mood, tempo feel, vocals, production style, "
     "and notable sound events. Do not mention that you are an AI."
 )
+WHISPER_MODELS = {}
 
 
 def clean_caption(text: str) -> str:
@@ -35,6 +36,19 @@ def clean_caption(text: str) -> str:
 def clean_dataset_name(text: str) -> str:
     cleaned = re.sub(r"[^A-Za-z0-9_.-]+", "-", (text or "").strip()).strip("-")
     return cleaned or "moss_ace_dataset"
+
+
+def format_lrc_time(seconds: float) -> str:
+    minutes = int(seconds // 60)
+    remaining = seconds - (minutes * 60)
+    return f"{minutes:02d}:{remaining:05.2f}"
+
+
+def format_range_time(seconds: float) -> str:
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    remaining = seconds % 60
+    return f"{hours:02d}:{minutes:02d}:{remaining:06.3f}"
 
 
 def media_files_in_folder(folder: Path, recursive: bool) -> list[Path]:
@@ -203,6 +217,69 @@ def caption_audio(
     return clean_caption(answer)
 
 
+def get_whisper_model(model_name: str, log: Callable[[str], None]):
+    model_key = model_name or "base"
+    if model_key in WHISPER_MODELS:
+        return WHISPER_MODELS[model_key]
+
+    try:
+        import whisper
+    except ImportError as exc:
+        raise RuntimeError(
+            "Whisper is not installed. Install it in this environment with: "
+            "pip install -U openai-whisper"
+        ) from exc
+
+    log(f"Loading Whisper model: {model_key}")
+    WHISPER_MODELS[model_key] = whisper.load_model(model_key)
+    return WHISPER_MODELS[model_key]
+
+
+def transcribe_lyrics_with_whisper(
+    audio_path: Path,
+    model_name: str,
+    language: str,
+    write_timestamps: bool,
+    log: Callable[[str], None],
+) -> tuple[str, str, str]:
+    model = get_whisper_model(model_name, log)
+    kwargs = {
+        "task": "transcribe",
+        "fp16": False,
+        "verbose": False,
+    }
+    if language.strip():
+        kwargs["language"] = language.strip()
+
+    log(f"Transcribing lyrics with Whisper: {audio_path.name}")
+    result = model.transcribe(str(audio_path), **kwargs)
+    segments = result.get("segments") or []
+
+    clean_lines: list[str] = []
+    lrc_lines: list[str] = []
+    timestamp_lines: list[str] = []
+
+    if segments:
+        for segment in segments:
+            text = clean_caption(segment.get("text", ""))
+            if not text:
+                continue
+            clean_lines.append(text)
+            if write_timestamps:
+                start = float(segment.get("start") or 0.0)
+                end = float(segment.get("end") or start)
+                lrc_lines.append(f"[{format_lrc_time(start)}] {text}")
+                timestamp_lines.append(
+                    f"{format_range_time(start)} --> {format_range_time(end)} {text}"
+                )
+    else:
+        text = clean_caption(result.get("text", ""))
+        if text:
+            clean_lines.append(text)
+
+    return "\n".join(clean_lines), "\n".join(lrc_lines), "\n".join(timestamp_lines)
+
+
 def write_metadata_csv(output_dir: Path, rows: list[dict]) -> None:
     csv_path = output_dir / "metadata.csv"
     by_file: dict[str, dict] = {}
@@ -298,6 +375,8 @@ def write_sidecars(
     filename: str,
     caption: str,
     lyrics: str,
+    lrc_text: str,
+    timestamp_text: str,
     duration: float | None,
     custom_tag: str,
 ) -> dict:
@@ -308,6 +387,12 @@ def write_sidecars(
     (output_dir / f"{stem}.txt").write_text(lyrics_text + "\n", encoding="utf-8")
     (output_dir / f"{stem}.lyrics.txt").write_text(lyrics_text + "\n", encoding="utf-8")
     (output_dir / f"{stem}.caption.txt").write_text(caption_text + "\n", encoding="utf-8")
+    if lrc_text.strip():
+        (output_dir / f"{stem}.lrc").write_text(lrc_text.strip() + "\n", encoding="utf-8")
+    if timestamp_text.strip():
+        (output_dir / f"{stem}.timestamps.txt").write_text(
+            timestamp_text.strip() + "\n", encoding="utf-8"
+        )
 
     json_payload = {
         "caption": caption_text,
@@ -332,6 +417,7 @@ def write_sidecars(
         "Lyrics": lyrics_text,
         "Duration": int(duration or 0),
         "TimeSignature": "4",
+        "HasTimestamps": bool(lrc_text.strip() or timestamp_text.strip()),
     }
 
 
@@ -362,6 +448,10 @@ def process_files(
     prompt: str,
     lyrics_text: str,
     treat_as_instrumental: bool,
+    use_whisper_lyrics: bool,
+    whisper_model_name: str,
+    whisper_language: str,
+    write_whisper_timestamps: bool,
     chunk_seconds: int,
     force_chunking: bool,
     start_index: int,
@@ -416,17 +506,38 @@ def process_files(
                     max_new_tokens=int(max_new_tokens),
                     log=log,
                 )
+                unit_lyrics = base_lyrics
+                lrc_text = ""
+                timestamp_text = ""
+                if use_whisper_lyrics:
+                    whisper_lyrics, lrc_text, timestamp_text = transcribe_lyrics_with_whisper(
+                        audio_path=target,
+                        model_name=whisper_model_name,
+                        language=whisper_language,
+                        write_timestamps=write_whisper_timestamps,
+                        log=log,
+                    )
+                    if whisper_lyrics.strip():
+                        unit_lyrics = whisper_lyrics
+                    elif not unit_lyrics.strip():
+                        unit_lyrics = "[Instrumental]"
                 duration = probe_duration_seconds(target)
                 row = write_sidecars(
                     output_dir=output_dir,
                     filename=filename,
                     caption=caption,
-                    lyrics=base_lyrics,
+                    lyrics=unit_lyrics,
+                    lrc_text=lrc_text,
+                    timestamp_text=timestamp_text,
                     duration=duration,
                     custom_tag=custom_tag,
                 )
                 rows.append(row)
-                log(f"Wrote {filename}, {Path(filename).stem}.caption.txt, and sidecars")
+                timestamp_note = ", timestamp files" if row["HasTimestamps"] else ""
+                log(
+                    f"Wrote {filename}, {Path(filename).stem}.caption.txt, "
+                    f"lyrics files{timestamp_note}"
+                )
                 current_index += 1
 
     if not rows:
@@ -449,6 +560,8 @@ def process_files(
             f"- {row['File']}, {stem}.txt, {stem}.lyrics.txt, "
             f"{stem}.caption.txt, {stem}.json"
         )
+        if row.get("HasTimestamps"):
+            summary_lines.append(f"  timestamps: {stem}.lrc, {stem}.timestamps.txt")
 
     return "\n".join(summary_lines), "\n".join(progress_log)
 
@@ -461,6 +574,10 @@ def process_single_stream(
     prompt: str,
     lyrics_text: str,
     treat_as_instrumental: bool,
+    use_whisper_lyrics: bool,
+    whisper_model_name: str,
+    whisper_language: str,
+    write_whisper_timestamps: bool,
     chunk_seconds: int,
     force_chunking: bool,
     start_index: int,
@@ -479,6 +596,10 @@ def process_single_stream(
             prompt=prompt,
             lyrics_text=lyrics_text,
             treat_as_instrumental=treat_as_instrumental,
+            use_whisper_lyrics=use_whisper_lyrics,
+            whisper_model_name=whisper_model_name,
+            whisper_language=whisper_language,
+            write_whisper_timestamps=write_whisper_timestamps,
             chunk_seconds=chunk_seconds,
             force_chunking=force_chunking,
             start_index=start_index,
@@ -499,6 +620,10 @@ def process_folder_stream(
     prompt: str,
     lyrics_text: str,
     treat_as_instrumental: bool,
+    use_whisper_lyrics: bool,
+    whisper_model_name: str,
+    whisper_language: str,
+    write_whisper_timestamps: bool,
     chunk_seconds: int,
     force_chunking: bool,
     start_index: int,
@@ -523,6 +648,10 @@ def process_folder_stream(
             prompt=prompt,
             lyrics_text=lyrics_text,
             treat_as_instrumental=treat_as_instrumental,
+            use_whisper_lyrics=use_whisper_lyrics,
+            whisper_model_name=whisper_model_name,
+            whisper_language=whisper_language,
+            write_whisper_timestamps=write_whisper_timestamps,
             chunk_seconds=chunk_seconds,
             force_chunking=force_chunking,
             start_index=start_index,
@@ -628,12 +757,12 @@ with gr.Blocks(css=CSS, title="MOSS to ACE-Step Dataset Prep") as demo:
         with gr.Row():
             lyrics_text = gr.Textbox(
                 label="Lyrics",
-                placeholder="Optional. Leave blank for instrumental clips.",
+                placeholder="Optional manual lyrics. Whisper can fill this per file.",
                 lines=4,
             )
             with gr.Column():
                 treat_as_instrumental = gr.Checkbox(
-                    label="Treat as instrumental",
+                    label="Treat as instrumental when Whisper/manual lyrics are empty",
                     value=True,
                 )
                 chunk_seconds = gr.Slider(
@@ -646,6 +775,33 @@ with gr.Blocks(css=CSS, title="MOSS to ACE-Step Dataset Prep") as demo:
                 force_chunking = gr.Checkbox(
                     label="Always chunk, even short files",
                     value=False,
+                )
+
+        with gr.Accordion("Whisper Lyrics / Timestamp Files", open=False):
+            gr.Markdown(
+                "ACE-Step wants clean lyrics without timestamps for training. "
+                "When enabled, Whisper writes clean lyrics to `.lyrics.txt` and "
+                "puts timestamped text in separate `.lrc` and `.timestamps.txt` files. "
+                "Requires `pip install -U openai-whisper` in this environment."
+            )
+            with gr.Row():
+                use_whisper_lyrics = gr.Checkbox(
+                    label="Transcribe lyrics with Whisper",
+                    value=False,
+                )
+                write_whisper_timestamps = gr.Checkbox(
+                    label="Also write timestamp files",
+                    value=True,
+                )
+            with gr.Row():
+                whisper_model_name = gr.Dropdown(
+                    label="Whisper Model",
+                    choices=["tiny", "base", "small", "medium", "large"],
+                    value="base",
+                )
+                whisper_language = gr.Textbox(
+                    label="Language Code",
+                    placeholder="Optional, e.g. en, ja, es. Leave blank to auto-detect.",
                 )
 
         with gr.Row():
@@ -691,6 +847,7 @@ with gr.Blocks(css=CSS, title="MOSS to ACE-Step Dataset Prep") as demo:
         gr.Markdown(
             """
             ACE-Step output includes numbered WAV files plus matching `.txt`, `.lyrics.txt`, `.caption.txt`, `.json`, `metadata.csv`, and `dataset.json`.
+            Whisper timestamp files are saved separately as `.lrc` and `.timestamps.txt` for review; the ACE lyrics files remain timestamp-free.
             Load the output folder in ACE-Step's LoRA Training tab, scan it, review captions, then preprocess.
             """
         )
@@ -702,6 +859,10 @@ with gr.Blocks(css=CSS, title="MOSS to ACE-Step Dataset Prep") as demo:
         prompt,
         lyrics_text,
         treat_as_instrumental,
+        use_whisper_lyrics,
+        whisper_model_name,
+        whisper_language,
+        write_whisper_timestamps,
         chunk_seconds,
         force_chunking,
         start_index,
