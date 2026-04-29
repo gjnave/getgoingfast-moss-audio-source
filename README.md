@@ -29,6 +29,9 @@ Installation instructions:
 10. `set MOSS_AUDIO_MODEL_ID=.\weights\MOSS-Audio-4B-Instruct`
 11. `python app.py`
 
+App Screenshot:
+
+![MOSS Audio Captioning App](./assets/screen1.jpg)
 
 <p align="center">
   <img src="./assets/moss-audio-logo.png" width="55%" />
