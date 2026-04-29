@@ -2,6 +2,19 @@
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
+if exist "disclaimer.md" (
+    type "disclaimer.md"
+    echo.
+    pause
+)
+
+if exist "about.nfo" (
+    type "about.nfo"
+    echo.
+)
+echo.
+ECHO Installing MOSS-Audio...
+
 set "ROOT_DIR=%~dp0"
 set "VENV_DIR=%ROOT_DIR%.venv"
 set "WEIGHTS_DIR=%ROOT_DIR%weights\MOSS-Audio-4B-Instruct"
